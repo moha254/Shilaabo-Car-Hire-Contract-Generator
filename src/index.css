@@ -1,0 +1,13 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, sans-serif;
+}
+
+* {
+  @apply box-border;
+}
+
+html {
+  @apply bg-slate-50 text-slate-900;
+}
