@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { CustomerForm } from './components/CustomerForm';
 import { VehicleForm } from './components/VehicleForm';
 import { RentalForm } from './components/RentalForm';
@@ -12,7 +12,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [viewMode, setViewMode] = useState<'form' | 'list' | 'preview'>('form');
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
-  const pdfContentRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement | null>(null);
 
   const [customer, setCustomer] = useState<CustomerDetails>({
     fullName: '',
@@ -66,15 +66,15 @@ function App() {
   const isStepValid = (): boolean => {
     switch (currentStep) {
       case 1:
-        return customer.fullName && customer.passportNumber && customer.licenseNumber && customer.citizenship && customer.address && customer.phone;
+        return !!(customer.fullName && customer.passportNumber && customer.licenseNumber && customer.citizenship && customer.address && customer.phone);
       case 2:
-        return vehicle.vehicleType && vehicle.carMake && vehicle.model && vehicle.registrationNumber && vehicle.fuelLevel;
+        return !!(vehicle.vehicleType && vehicle.carMake && vehicle.model && vehicle.registrationNumber && vehicle.fuelLevel);
       case 3:
-        return rental.dateOut && rental.timeOut && rental.dateIn && rental.timeIn && rental.ratePerDay > 0;
+        return !!(rental.dateOut && rental.timeOut && rental.dateIn && rental.timeIn && rental.ratePerDay > 0);
       case 4:
         return true;
       case 5:
-        return hireName && officerName;
+        return !!(hireName && officerName);
       default:
         return false;
     }

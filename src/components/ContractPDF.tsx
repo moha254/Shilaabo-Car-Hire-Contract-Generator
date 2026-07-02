@@ -7,7 +7,7 @@ interface ContractPDFProps {
   contract: ContractData;
 }
 
-export const generateContractPDF = async (contract: ContractData, contentRef: React.RefObject<HTMLDivElement>) => {
+export const generateContractPDF = async (contract: ContractData, contentRef: React.RefObject<HTMLDivElement | null>) => {
   if (!contentRef.current) return;
 
   try {
@@ -63,7 +63,7 @@ export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
   const grandTotal = contract.rental.totalAmount + totalAccessoriesCost;
 
   const generatePDF = async () => {
-    await generateContractPDF(contract, contentRef);
+    await generateContractPDF(contract, contentRef as React.RefObject<HTMLDivElement>);
   };
 
   return (
@@ -192,8 +192,8 @@ export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
           <div className="mb-4">
             <h4 className="text-sm font-bold bg-blue-100 p-2 mb-2">ACCESSORIES</h4>
             <div className="flex flex-wrap gap-4 mb-2">
-              {selectedAccessories.map((accessory) => (
-                <div key={accessory.id} className="flex items-center gap-2">
+              {selectedAccessories.map((accessory, index) => (
+                <div key={index} className="flex items-center gap-2">
                   <span className="text-blue-600 font-bold">{accessory.name}:</span>
                   <span>KES {accessory.price.toLocaleString()}</span>
                 </div>
