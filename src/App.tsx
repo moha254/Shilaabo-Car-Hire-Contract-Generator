@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { CustomerForm } from './components/CustomerForm';
 import { VehicleForm } from './components/VehicleForm';
 import { RentalForm } from './components/RentalForm';
 import { AccessoriesForm } from './components/AccessoriesForm';
-import { ContractPDF, generateContractPDF } from './components/ContractPDF';
 import { ContractData, CustomerDetails, VehicleDetails, RentalDetails, Accessory } from './types/index';
 import { generateContractId, saveContract, getAllContracts, getContractById } from './utils/storage';
 import { FileText, Save, Plus, Eye, Trash2 } from 'lucide-react';
@@ -12,7 +13,7 @@ function App() {
   const [currentStep, setCurrentStep] = useState(1);
   const [viewMode, setViewMode] = useState<'form' | 'list' | 'preview'>('form');
   const [selectedContractId, setSelectedContractId] = useState<string | null>(null);
-  const pdfContentRef = useRef<HTMLDivElement | null>(null);
+  const contractPDFRef = useRef<HTMLDivElement>(null);
 
   const [customer, setCustomer] = useState<CustomerDetails>({
     fullName: '',
@@ -58,6 +59,7 @@ function App() {
   const [officerName, setOfficerName] = useState('');
   const [officerSignature, setOfficerSignature] = useState('');
   const [contracts, setContracts] = useState<ContractData[]>([]);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     setContracts(getAllContracts());
@@ -162,6 +164,56 @@ function App() {
     setOfficerSignature('');
   };
 
+  const generatePDF = async () => {
+    if (!contractPDFRef.current) return;
+
+    try {
+      const canvas = await html2canvas(contractPDFRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let yPosition = 10;
+
+      if (imgHeight > pageHeight - 20) {
+        const pages = Math.ceil(imgHeight / (pageHeight - 20));
+        for (let i = 0; i < pages; i++) {
+          if (i > 0) pdf.addPage();
+          pdf.addImage(
+            imgData,
+            'PNG',
+            10,
+            yPosition - i * (pageHeight - 20),
+            imgWidth,
+            imgHeight
+          );
+        }
+      } else {
+        pdf.addImage(imgData, 'PNG', 10, yPosition, imgWidth, imgHeight);
+      }
+
+      const fileName = `Shilaabo_Contract_${currentContract?.id}_${Date.now()}.pdf`;
+      pdf.save(fileName);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      throw error;
+    }
+  };
+
   const loadContract = (id: string) => {
     const contract = getContractById(id);
     if (contract) {
@@ -213,7 +265,7 @@ function App() {
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => { setViewMode('form'); setCurrentStep(1); }}
+              onClick={() => { resetForm(); setViewMode('form'); setCurrentStep(1); }}
               className={`px-4 py-2 rounded-lg font-medium transition ${
                 viewMode === 'form'
                   ? 'bg-white text-blue-600'
@@ -381,7 +433,7 @@ function App() {
                 <FileText className="w-16 h-16 text-slate-300 mx-auto mb-4" />
                 <p className="text-slate-500 mb-4">No contracts saved yet.</p>
                 <button
-                  onClick={() => setViewMode('form')}
+                  onClick={() => { resetForm(); setViewMode('form'); setCurrentStep(1); }}
                   className="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition"
                 >
                   Create First Contract
@@ -429,10 +481,21 @@ function App() {
               <h2 className="text-2xl font-bold text-slate-900">Contract Preview: {currentContract.id}</h2>
               <div className="flex gap-2">
                 <button
-                  onClick={() => generateContractPDF(currentContract, pdfContentRef)}
-                  className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition"
+                  onClick={async () => {
+                    setIsDownloading(true);
+                    try {
+                      await generatePDF();
+                    } catch (error) {
+                      console.error('Error generating PDF:', error);
+                      alert('Failed to generate PDF. Please try again.');
+                    } finally {
+                      setIsDownloading(false);
+                    }
+                  }}
+                  disabled={isDownloading}
+                  className="px-6 py-2 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition disabled:bg-slate-400 disabled:cursor-not-allowed"
                 >
-                  Download PDF
+                  {isDownloading ? 'Generating PDF...' : 'Download PDF'}
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
@@ -444,44 +507,163 @@ function App() {
             </div>
 
             <div className="bg-slate-50 rounded-lg p-6 h-96 overflow-y-auto">
-              <div className="bg-white p-8 text-sm text-slate-800 space-y-4">
-                <div className="flex items-center gap-4 mb-4">
-                  <img src="/img/logo.jpeg" alt="Shilaabo Logo" className="w-16 h-16 object-contain" />
-                  <div>
-                    <h3 className="text-xl font-bold text-blue-600">SHILAABO TOUR & CAR HIRE</h3>
-                    <p className="font-bold">HIRE CONTRACT</p>
+              <div ref={contractPDFRef} className="bg-white p-8 text-xs text-slate-800 space-y-4">
+                <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-blue-600">
+                  <div className="flex items-center gap-4">
+                    <img src="/img/logo.jpeg" alt="Shilaabo Logo" className="w-16 h-16 object-contain" />
+                    <h1 className="text-xl font-bold text-blue-600">SHILAABO TOUR & CAR HIRE <br/>HIRE CONTRACT</h1>
+                  </div>
+                  <div className="text-right text-xs">
+                    <p>BBS Mall Basement</p>
+                    <p>Room No. LGC 48</p>
+                    <p>Tel: 0722814942/0792837410</p>
                   </div>
                 </div>
-                <p className="text-red-600 text-lg font-bold">{currentContract.id}</p>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-bold mb-2">CUSTOMER INFORMATION</h4>
-                  <p><strong>Name:</strong> {currentContract.customer.fullName}</p>
-                  <p><strong>Phone:</strong> {currentContract.customer.phone}</p>
-                  <p><strong>License:</strong> {currentContract.customer.licenseNumber}</p>
+                <div className="flex justify-between items-center mb-6">
+                  <div className="text-2xl font-bold text-red-600">{currentContract.id}</div>
+                  <div className="text-sm">Date: {new Date(currentContract.createdAt).toLocaleDateString()}</div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-bold mb-2">VEHICLE INFORMATION</h4>
-                  <p><strong>Type:</strong> {currentContract.vehicle.vehicleType}</p>
-                  <p><strong>Make/Model:</strong> {currentContract.vehicle.carMake} {currentContract.vehicle.model}</p>
-                  <p><strong>Registration:</strong> {currentContract.vehicle.registrationNumber}</p>
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold bg-blue-100 p-2 mb-2">CUSTOMER INFORMATION</h4>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Full Name:</span>
+                    <span className="w-3/5">{currentContract.customer.fullName}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Business/Occupation:</span>
+                    <span className="w-3/5">{currentContract.customer.businessOccupation}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Passport No.:</span>
+                    <span className="w-3/5">{currentContract.customer.passportNumber}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">License No.:</span>
+                    <span className="w-3/5">{currentContract.customer.licenseNumber}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Citizenship:</span>
+                    <span className="w-3/5">{currentContract.customer.citizenship}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Address:</span>
+                    <span className="w-3/5">{currentContract.customer.address}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Phone:</span>
+                    <span className="w-3/5">{currentContract.customer.phone}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Email:</span>
+                    <span className="w-3/5">{currentContract.customer.email}</span>
+                  </div>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-bold mb-2">RENTAL INFORMATION</h4>
-                  <p><strong>Out:</strong> {currentContract.rental.dateOut} {currentContract.rental.timeOut}</p>
-                  <p><strong>In:</strong> {currentContract.rental.dateIn} {currentContract.rental.timeIn}</p>
-                  <p><strong>Rate:</strong> KES {currentContract.rental.ratePerDay.toLocaleString()}/day</p>
-                  <p><strong>Total:</strong> KES {currentContract.rental.totalAmount.toLocaleString()}</p>
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold bg-blue-100 p-2 mb-2">VEHICLE INFORMATION</h4>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Vehicle Type:</span>
+                    <span className="w-3/5">{currentContract.vehicle.vehicleType}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Car Make:</span>
+                    <span className="w-3/5">{currentContract.vehicle.carMake}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Model:</span>
+                    <span className="w-3/5">{currentContract.vehicle.model}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Registration No.:</span>
+                    <span className="w-3/5">{currentContract.vehicle.registrationNumber}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Mileage In:</span>
+                    <span className="w-3/5">{currentContract.vehicle.mileageIn}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Fuel Level on Departure:</span>
+                    <span className="w-3/5">{currentContract.vehicle.fuelLevel}</span>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* Hidden ContractPDF component for PDF generation */}
-            <div className="hidden">
-              <div ref={pdfContentRef}>
-                <ContractPDF contract={currentContract} />
+                <div className="mb-4">
+                  <h4 className="text-sm font-bold bg-blue-100 p-2 mb-2">RENTAL TERMS & CONDITIONS</h4>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Condition/Damage Noted:</span>
+                    <span className="w-3/5">{currentContract.rental.conditionNoted || 'None'}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Date Out:</span>
+                    <span className="w-3/5">{currentContract.rental.dateOut} @ {currentContract.rental.timeOut}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Date In:</span>
+                    <span className="w-3/5">{currentContract.rental.dateIn} @ {currentContract.rental.timeIn}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Rate Charged Per Day:</span>
+                    <span className="w-3/5">KES {currentContract.rental.ratePerDay.toLocaleString()}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Total Amount:</span>
+                    <span className="w-3/5">KES {currentContract.rental.totalAmount.toLocaleString()}</span>
+                  </div>
+                  <div className="border-b border-gray-300 pb-1 mb-2 flex justify-between">
+                    <span className="font-bold text-blue-600 w-2/5">Deposit Paid:</span>
+                    <span className="w-3/5">{currentContract.rental.depositPaid}</span>
+                  </div>
+                </div>
+
+                {currentContract.accessories.filter(a => a.selected).length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-bold bg-blue-100 p-2 mb-2">ACCESSORIES</h4>
+                    <div className="flex flex-wrap gap-4 mb-2">
+                      {currentContract.accessories.filter(a => a.selected).map((accessory, index) => (
+                        <div key={index} className="flex items-center gap-2">
+                          <span className="text-blue-600 font-bold">{accessory.name}:</span>
+                          <span>KES {accessory.price.toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t-2 border-blue-600 pt-1 flex justify-between font-bold">
+                      <span>Total Accessories Cost:</span>
+                      <span>KES {currentContract.accessories.filter(a => a.selected).reduce((sum, a) => sum + a.price, 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-blue-600 text-white p-3 mb-4 font-bold text-sm flex justify-between">
+                  <span>GRAND TOTAL:</span>
+                  <span>KES {(currentContract.rental.totalAmount + currentContract.accessories.filter(a => a.selected).reduce((sum, a) => sum + a.price, 0)).toLocaleString()}</span>
+                </div>
+
+                <div className="bg-yellow-100 border border-yellow-300 p-3 mb-4 text-xs">
+                  <p className="font-bold mb-2">EXCESS PAYABLE IN DAMAGE INCASE OF ANY</p>
+                  <p className="leading-relaxed">
+                    I fully understand that by the daily insurance, my maximum liability to the company is limited to upto KS.. I undertake that the hired vehicle should be returned strictly within the stipulated time and date and any extension will attract a fee of KSh 1000 per hour. In case of an accident and every claim payable to the insurance company not withstanding payment of the excess.
+                  </p>
+                </div>
+
+                <div className="flex justify-between mt-8">
+                  <div className="w-2/5">
+                    <p className="text-xs font-bold mb-12">Name of the Hirer</p>
+                    <div className="border-t border-black pt-1 text-xs">Signature</div>
+                  </div>
+                  <div className="w-2/5">
+                    <p className="text-xs font-bold mb-12">Name of the Hiring Officer/Agent</p>
+                    <div className="border-t border-black pt-1 text-xs">Signature</div>
+                  </div>
+                </div>
+
+                <div className="text-xs mt-6 pt-4 border-t border-gray-300 text-gray-600">
+                  <p>
+                    I fully understand that I am the only person authorised to drive this vehicle unless specific authority has been passed by the company in writing with the consent of the Hirers, and Hirerized. If the car is used for any illegal activities, Shilaabo Tour & Car Hire will have no responsibility for the cost of the vehicle will be held responsible.
+                  </p>
+                  <p className="mt-2 font-bold">CHECK TERMS AND CONDITIONS OVERLEAF.</p>
+                </div>
               </div>
             </div>
           </div>

@@ -1,10 +1,14 @@
-import React, { useRef } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { ContractData } from '../types/index';
 
 interface ContractPDFProps {
   contract: ContractData;
+}
+
+export interface ContractPDFRef {
+  generatePDF: () => Promise<void>;
 }
 
 export const generateContractPDF = async (contract: ContractData, contentRef: React.RefObject<HTMLDivElement | null>) => {
@@ -53,18 +57,28 @@ export const generateContractPDF = async (contract: ContractData, contentRef: Re
     pdf.save(fileName);
   } catch (error) {
     console.error('Error generating PDF:', error);
+    throw error;
   }
 };
 
-export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
+export const ContractPDF = forwardRef<ContractPDFRef, ContractPDFProps>(({ contract }, ref) => {
   const contentRef = useRef<HTMLDivElement>(null);
   const selectedAccessories = contract.accessories.filter(a => a.selected);
   const totalAccessoriesCost = selectedAccessories.reduce((sum, a) => sum + a.price, 0);
   const grandTotal = contract.rental.totalAmount + totalAccessoriesCost;
 
   const generatePDF = async () => {
+    console.log('generatePDF called, contentRef.current:', contentRef.current);
+    if (!contentRef.current) {
+      console.error('contentRef.current is null');
+      throw new Error('Content ref is not available');
+    }
     await generateContractPDF(contract, contentRef as React.RefObject<HTMLDivElement>);
   };
+
+  useImperativeHandle(ref, () => ({
+    generatePDF
+  }));
 
   return (
     <div>
@@ -73,16 +87,12 @@ export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
         <div className="flex justify-between items-start mb-6 pb-4 border-b-2 border-blue-600">
           <div className="flex items-center gap-4">
             <img src="/img/logo.jpeg" alt="Shilaabo Logo" className="w-20 h-20 object-contain" />
-            <div>
-              <h1 className="text-2xl font-bold text-blue-600">SHILAABO TOUR</h1>
-              <h2 className="text-2xl font-bold text-blue-600">& CAR HIRE</h2>
-              <h3 className="text-lg font-bold text-blue-600 mt-2">HIRE CONTRACT</h3>
-            </div>
+            <h1 className="text-2xl font-bold text-blue-600">SHILAABO TOUR & CAR HIRE <br/>HIRE CONTRACT</h1>
           </div>
           <div className="text-right text-xs">
             <p>BBS Mall Basement</p>
             <p>Room No. LGC 48</p>
-            <p>Tel: +254 722 914 942</p>
+            <p>Tel: +254 722 814 942</p>
           </div>
         </div>
 
@@ -216,7 +226,7 @@ export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
         <div className="bg-yellow-100 border border-yellow-300 p-3 mb-4 text-xs">
           <p className="font-bold mb-2">EXCESS PAYABLE IN DAMAGE INCASE OF ANY</p>
           <p className="leading-relaxed">
-            I fully understand that by the daily insurance, my maximum liability to the company is limited to upto KS.. I undertake that the hired vehicle should be returned strictly within the stipulated time and date and any extension will attract a fee of KSh 700 per hour. In case of an accident and every claim payable to the insurance company not withstanding payment of the excess.
+            I fully understand that by the daily insurance, my maximum liability to the company is limited to upto KS.. I undertake that the hired vehicle should be returned strictly within the stipulated time and date and any extension will attract a fee of KSh 1000 per hour. In case of an accident and every claim payable to the insurance company not withstanding payment of the excess.
           </p>
         </div>
 
@@ -240,13 +250,8 @@ export const ContractPDF: React.FC<ContractPDFProps> = ({ contract }) => {
           <p className="mt-2 font-bold">CHECK TERMS AND CONDITIONS OVERLEAF.</p>
         </div>
       </div>
-
-      <button
-        onClick={generatePDF}
-        className="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition"
-      >
-        Download Contract as PDF
-      </button>
     </div>
   );
-};
+});
+
+ContractPDF.displayName = 'ContractPDF';
