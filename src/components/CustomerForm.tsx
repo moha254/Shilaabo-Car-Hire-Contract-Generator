@@ -13,12 +13,12 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
   };
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-slate-900">Customer Details</h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="space-y-4 sm:space-y-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Customer Details</h2>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             Full Name *
           </label>
           <input
@@ -27,13 +27,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             value={data.fullName}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter full name"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             Business/Occupation
           </label>
           <input
@@ -41,13 +41,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             name="businessOccupation"
             value={data.businessOccupation}
             onChange={handleChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter business or occupation"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             ID/Passport No: *
           </label>
           <input
@@ -56,13 +56,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             value={data.passportNumber}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter ID or passport number"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             Driving License No: *
           </label>
           <input
@@ -71,13 +71,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             value={data.licenseNumber}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter driving license number"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             Citizenship *
           </label>
           <input
@@ -86,13 +86,13 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             value={data.citizenship}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter citizenship"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">
+          <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
             Phone Number *
           </label>
           <input
@@ -101,14 +101,14 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
             value={data.phone}
             onChange={handleChange}
             required
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
             placeholder="Enter phone number"
           />
         </div>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-700 mb-1">
+        <label className="block text-xs sm:text-sm font-medium text-slate-700 mb-1">
           Address *
         </label>
         <textarea
@@ -117,7 +117,7 @@ export const CustomerForm: React.FC<CustomerFormProps> = ({ data, onChange }) =>
           onChange={handleChange}
           required
           rows={3}
-          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
           placeholder="Enter address"
         />
       </div>
